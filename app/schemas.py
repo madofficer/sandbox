@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class PingCountRespnse(BaseModel):
+class PingCountResponse(BaseModel):
     endpoint: str
     count: int
 
