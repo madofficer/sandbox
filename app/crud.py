@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import User, Post, ApiCounter
+from app.tools import timer
 
 
 async def log_api_call(db: AsyncSession, endpoint: str) -> ApiCounter:
@@ -57,18 +58,18 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
 
 
 # n + 1 problem
-async def n_plus_one_bad(db: AsyncSession) -> list[dict[str, str]]:
-    users = (await db.execute(select(User).order_by(User.id))).scalars().all()
-
+@timer
+async def n_plus_one_bad(db: AsyncSession) -> list[dict[str, str | int]]:
     result = []
 
+    users = (await db.execute(select(User).order_by(User.id))).scalars().all()
     for user in users:
-        posts = (await db.execute(select(Post).where(Post.user_id == user.id))).scalar().all()
-        result.append({"user": user.name, posts: [post.title for post in posts]})
-
+        posts = (await db.execute(select(Post).where(Post.user_id == user.id))).scalars().all()
+        result.append({"user": user.name, "posts": [post.title for post in posts]})
     return result
 
 
+@timer
 async def n_plus_one_good(db: AsyncSession) -> list[dict[str, str]]:
     statement = select(User).options(selectinload(User.posts)).order_by(User.id)
     users = (await db.execute(statement)).scalars().all()
